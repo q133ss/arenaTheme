@@ -212,30 +212,21 @@ get_header();
             <div class="swiper main-arena__slider">
 
                 <div class="swiper-wrapper">
+                    <?php
+						$params = array(
+							'post_type' => 'main_gallery', // тип постов - записи
+							'orderby' => 'date', // сортировать по дате
+							'order' => 'DESC', // по убыванию (сначала - свежие посты)
+							'suppress_filters' => true // 'posts_*' и 'comment_feed_*' фильтры игнорируются
+						);
+
+						$news = get_posts($params);
+						foreach ($news as $post):
+                    ?>
                     <div class="swiper-slide main-arena__item">
-                        <img src="<?php echo get_template_directory_uri(); ?>/img/main-arena-slider-1.png" alt="main-arena-slider">
+                        <img src="<?php echo get_the_post_thumbnail_url(); ?>" alt="main-arena-slider">
                     </div>
-                    <div class="swiper-slide main-arena__item">
-                        <img src="<?php echo get_template_directory_uri(); ?>/img/main-arena-slider-2.png" alt="main-arena-slider">
-                    </div>
-                    <div class="swiper-slide main-arena__item">
-                        <img src="<?php echo get_template_directory_uri(); ?>/img/main-arena-slider-3.png" alt="main-arena-slider">
-                    </div>
-                    <div class="swiper-slide main-arena__item">
-                        <img src="<?php echo get_template_directory_uri(); ?>/img/main-arena-slider-2.png" alt="main-arena-slider">
-                    </div>
-                    <div class="swiper-slide main-arena__item">
-                        <img src="<?php echo get_template_directory_uri(); ?>/img/main-arena-slider-2.png" alt="main-arena-slider">
-                    </div>
-                    <div class="swiper-slide main-arena__item">
-                        <img src="<?php echo get_template_directory_uri(); ?>/img/main-arena-slider-2.png" alt="main-arena-slider">
-                    </div>
-                    <div class="swiper-slide main-arena__item">
-                        <img src="<?php echo get_template_directory_uri(); ?>/img/main-arena-slider-2.png" alt="main-arena-slider">
-                    </div>
-                    <div class="swiper-slide main-arena__item">
-                        <img src="<?php echo get_template_directory_uri(); ?>/img/main-arena-slider-2.png" alt="main-arena-slider">
-                    </div>
+                    <?php endforeach; ?>
                 </div>
                 <div class="main-arena__button">
                     <button class="main-arena__prev">
@@ -392,58 +383,52 @@ get_header();
                 <a class="events__button _button" href="#">Смотреть все анонсы</a>
             </div>
             <div class="events__content">
+            	<?php
+					$params = array(
+						'post_type' => 'announcements', // тип постов - записи
+						'posts_per_page' => 1,
+						'orderby' => 'date', // сортировать по дате
+						'order' => 'DESC', // по убыванию (сначала - свежие посты)
+						'suppress_filters' => true // 'posts_*' и 'comment_feed_*' фильтры игнорируются
+					);
+
+					$announcements = get_posts($params);
+					foreach ($announcements as $post):
+                ?>
                 <div class="preview">
-                    <img src="<?php echo get_template_directory_uri(); ?>/img/preview-photo.png" alt="">
-                    <p class="preview__date">8 июля 2023, 12:00</p>
-                    <h3 class="preview__title _title-description">ХК «Автомобилист» — ХК «Металлург Мг»</h3>
-                    <p class="preview__description">Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p>
-                    <a class="preview__button _button-no-fill" href="#">Узнать подробнее</a>
+                    <img src="<?php echo get_the_post_thumbnail_url(); ?>" alt="">
+                    <p class="preview__date"><?php echo get_the_date('d F Y, H:i'); ?></p>
+                    <h3 class="preview__title _title-description"><?php echo get_the_title(); ?></h3>
+                    <p class="preview__description"><?php echo get_the_excerpt(); ?></p>
+                    <a class="preview__button _button-no-fill" href="<?php echo get_the_permalink(); ?>">Узнать подробнее</a>
                 </div>
+            	<?php endforeach; ?>
                 <ul class="preview-list">
+				<?php
+					$params = array(
+						'post_type' => 'announcements', // тип постов - записи
+						'posts_per_page' => 4,
+						'orderby' => 'date', // сортировать по дате
+						'order' => 'DESC', // по убыванию (сначала - свежие посты)
+						'offset'         => 1,
+						'suppress_filters' => true // 'posts_*' и 'comment_feed_*' фильтры игнорируются
+					);
+
+					$announcements = get_posts($params);
+					foreach ($announcements as $post):
+                ?>
                     <li class="preview-list__item">
-                        <img src="<?php echo get_template_directory_uri(); ?>/img/preview-list.png" alt="">
+                        <img src="<?php echo get_the_post_thumbnail_url($post, 'thumbnail'); ?>" alt="">
                         <div class="preview-list__info">
-                            <p class="preview-list__date">2 августа 2023, 14:00</p>
-                            <h3 class="preview-list__title">ХК «Автомобилист» — ХК «Металлург Мг»</h3>
+                            <p class="preview-list__date"><?php echo get_the_date('d F Y, H:i'); ?></p>
+                            <h3 class="preview-list__title"><?php echo get_the_title(); ?></h3>
                             <p class="preview-list__description">
-                                Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor 
+                                <?php echo get_the_excerpt(); ?>
                             </p>
-                            <a class="preview-list__button" href="#">Узнать подробнее</a>
+                            <a class="preview-list__button" href="<?php echo get_the_permalink(); ?>">Узнать подробнее</a>
                         </div>
                     </li>
-                    <li class="preview-list__item">
-                        <img src="<?php echo get_template_directory_uri(); ?>/img/preview-list.png" alt="">
-                        <div class="preview-list__info">
-                            <p class="preview-list__date">2 августа 2023, 14:00</p>
-                            <h3 class="preview-list__title">ХК «Автомобилист» — ХК «Металлург Мг»</h3>
-                            <p class="preview-list__description">
-                                Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor 
-                            </p>
-                            <a class="preview-list__button" href="#">Узнать подробнее</a>
-                        </div>
-                    </li>
-                    <li class="preview-list__item">
-                        <img src="<?php echo get_template_directory_uri(); ?>/img/preview-list.png" alt="">
-                        <div class="preview-list__info">
-                            <p class="preview-list__date">2 августа 2023, 14:00</p>
-                            <h3 class="preview-list__title">ХК «Автомобилист» — ХК «Металлург Мг»</h3>
-                            <p class="preview-list__description">
-                                Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor
-                            </p>
-                            <a class="preview-list__button" href="#">Узнать подробнее</a>
-                        </div>
-                    </li>
-                    <li class="preview-list__item">
-                        <img src="<?php echo get_template_directory_uri(); ?>/img/preview-list.png" alt="">
-                        <div class="preview-list__info">
-                            <p class="preview-list__date">2 августа 2023, 14:00</p>
-                            <h3 class="preview-list__title">ХК «Автомобилист» — ХК «Металлург Мг»</h3>
-                            <p class="preview-list__description">
-                                Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor 
-                            </p>
-                            <a class="preview-list__button" href="#">Узнать подробнее</a>
-                        </div>
-                    </li>
+                	<?php endforeach; ?>
                 </ul>
             </div>
         </div>
