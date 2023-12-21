@@ -176,7 +176,8 @@ if ( defined( 'JETPACK__VERSION' ) ) {
 	require get_template_directory() . '/inc/jetpack.php';
 }
 
-
+//Jquery
+wp_enqueue_script("jquery");
 
 //CPT
 
@@ -407,3 +408,275 @@ function register_thanks_types(){
 	] );
 
 }
+
+
+// AjaxLoadPosts
+add_action('wp_ajax_loadmore', 'true_loadmore');
+add_action('wp_ajax_nopriv_loadmore', 'true_loadmore');
+function true_loadmore()
+{
+    $paged = !empty($_POST['paged']) ? $_POST['paged'] : 1;
+    $paged++;
+    $args = array('posts_per_page' => 6, 'paged' => $paged);
+    query_posts($args);
+ 
+    while (have_posts()) : the_post();
+    ?>
+    <li class="grid__item">
+        <img src="<?php echo get_the_post_thumbnail_url(); ?>" alt="">
+        <p class="grid__date"><?php echo get_the_date('d F Y'); ?></p>
+        <h3 class="grid__title"><?php echo get_the_title(); ?></h3>
+        <p class="grid__description"><?php echo get_the_excerpt(); ?></p>
+        <a class="grid__button _button-no-fill" href="<?php echo get_the_permalink(); ?>">Узнать подробнее</a>
+    </li>
+    <?php
+    endwhile;
+    die;
+}
+
+//Ajax subscribe
+add_action('wp_ajax_subscribe', 'true_subscribe');
+add_action('wp_ajax_nopriv_subscribe', 'true_subscribe');
+function true_subscribe()
+{
+	global $wpdb;
+    $name = !empty($_POST['name']) ? $_POST['name'] : '';
+    $email = $_POST['email'];
+
+    if (!empty($email)) {
+    $table_name = $wpdb->prefix . 'subscribes';
+
+    $data = array(
+        'name'  => $name,
+        'email' => $email,
+    );
+
+    $format = array('%s', '%s');
+
+    // Вставляем данные в таблицу
+    $wpdb->insert($table_name, $data, $format);
+
+    // Получаем ID вставленной записи
+    $inserted_id = $wpdb->insert_id;
+
+	} else {
+	    // Выводим сообщение, если переменные $name или $email пусты
+	    echo "Ошибка: Переменные name или email пусты.";
+	}
+
+    die;
+}
+
+
+//Delta
+
+function create_subscribes_table(){
+	global $wpdb;
+
+	require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+
+	$table_name = $wpdb->get_blog_prefix() . 'subscribes';
+	$charset_collate = $wpdb->get_charset_collate();
+
+	$sql = "CREATE TABLE {$table_name} (
+	id  bigint(20) unsigned NOT NULL auto_increment,
+	email varchar(255) NOT NULL,
+	name varchar(255) NOT NULL default '',
+	created_at dateTime NOT NULL default NOW(),
+	PRIMARY KEY  (id)
+	)
+	{$charset_collate};";
+
+	dbDelta($sql);
+}
+
+create_subscribes_table();
+
+
+// News Subscribes page in admin
+
+// Добавляем страницу в админку
+function custom_subscribers_page() {
+    add_menu_page(
+        'Подписчики на новости',
+        'Подписчики на новости',
+        'manage_options',
+        'subscribers_page',
+        'render_subscribers_page',
+        'dashicons-admin-users',
+        30
+    );
+}
+add_action('admin_menu', 'custom_subscribers_page');
+
+// Рендеринг страницы
+function render_subscribers_page() {
+    ?>
+    <div class="wrap">
+        <h2>Subscribers</h2>
+        <?php
+        // Выводим таблицу данных
+        $subscribers_table = new Subscribers_Table();
+        $subscribers_table->prepare_items();
+        $subscribers_table->display();
+        ?>
+    </div>
+    <?php
+}
+
+// Класс для работы с таблицей данных
+class Subscribers_Table extends WP_List_Table {
+	public function __construct() {
+        parent::__construct(array(
+            'singular' => 'subscriber',
+            'plural'   => 'subscribers',
+            'ajax'     => false,
+        ));
+	}
+
+    public function get_columns() {
+        $columns = array(
+            'cb'        => '<input type="checkbox" />',
+            'id'        => 'ID',
+            'email'     => 'Email',
+            'name'      => 'Name',
+            'created_at'=> 'Created At',
+            'actions'   => 'Actions',
+        );
+        return $columns;
+    }
+
+    public function get_sortable_columns() {
+        $sortable_columns = array(
+            'id' => array('id', false),
+            'email' => array('email', false),
+            'name' => array('name', false),
+            'created_at' => array('created_at', false),
+        );
+        return $sortable_columns;
+    }
+
+    public function usort_reorder($a, $b) {
+        // Ваша логика сортировки
+        $orderby = (!empty($_REQUEST['orderby'])) ? $_REQUEST['orderby'] : 'id';
+        $order = (!empty($_REQUEST['order'])) ? $_REQUEST['order'] : 'asc';
+        $result = strcmp($a[$orderby], $b[$orderby]);
+        return ($order === 'asc') ? $result : -$result;
+    }
+
+    public function prepare_items() {
+        global $wpdb;
+
+        $table_name = $wpdb->prefix . 'subscribes';
+
+        $per_page = 10;
+        $current_page = $this->get_pagenum();
+
+        $total_items = $wpdb->get_var("SELECT COUNT(id) FROM $table_name");
+
+        $this->set_pagination_args(array(
+            'total_items' => $total_items,
+            'per_page'    => $per_page,
+        ));
+
+        $columns = $this->get_columns();
+
+        $sortable = $this->get_sortable_columns();
+        $this->_column_headers = array($columns, array(), $sortable);
+
+        $orderby = isset($_REQUEST['orderby']) ? $_REQUEST['orderby'] : 'id';
+        $order = isset($_REQUEST['order']) && in_array(strtoupper($_REQUEST['order']), array('ASC', 'DESC')) ? $_REQUEST['order'] : 'ASC';
+
+        $data = $wpdb->get_results(
+            $wpdb->prepare("SELECT * FROM $table_name ORDER BY $orderby $order LIMIT %d OFFSET %d", $per_page, ($current_page - 1) * $per_page),
+            ARRAY_A
+        );
+
+        $this->items = $data;
+    }
+
+    public function column_default($item, $column_name) {
+        return $item[$column_name];
+    }
+
+    public function column_actions($item) {
+        $actions = array(
+            'delete' => sprintf('<a href="?page=%s&action=%s&subscriber=%s">Удалить</a>', $_REQUEST['page'], 'delete', $item['id']),
+        );
+        return sprintf('%s %s', 'Удалить', $this->row_actions($actions));
+    }
+
+    public function column_cb($item) {
+        return sprintf(
+            '<input type="checkbox" name="subscriber[]" value="%s" />',
+            $item['id']
+        );
+    }
+}
+
+// Обработка действий (удаление, редактирование)
+function handle_subscribers_actions() {
+    global $wpdb;
+
+    $table_name = $wpdb->prefix . 'subscribes';
+
+    if (isset($_GET['action']) && isset($_GET['subscriber'])) {
+        $action = $_GET['action'];
+        $subscriber_id = absint($_GET['subscriber']);
+
+        switch ($action) {
+            case 'edit':
+                // Редактирование записи
+                if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+                    // Обработка отправленной формы редактирования
+                    $email = sanitize_email($_POST['email']);
+                    $name = sanitize_text_field($_POST['name']);
+
+                    $wpdb->update(
+                        $table_name,
+                        array(
+                            'email' => $email,
+                            'name' => $name,
+                        ),
+                        array('id' => $subscriber_id),
+                        array('%s', '%s'),
+                        array('%d')
+                    );
+
+                    wp_redirect(admin_url('admin.php?page=subscribers_page'));
+                    exit;
+                } else {
+                    // Вывод формы редактирования
+                    $subscriber = $wpdb->get_row($wpdb->prepare("SELECT * FROM $table_name WHERE id = %d", $subscriber_id), ARRAY_A);
+
+                    ?>
+                    <div class="wrap">
+                        <h2>Edit Subscriber</h2>
+                        <form method="post" action="">
+                            <label for="email">Email:</label>
+                            <input type="text" name="email" value="<?php echo esc_attr($subscriber['email']); ?>" required>
+                            <br>
+                            <label for="name">Name:</label>
+                            <input type="text" name="name" value="<?php echo esc_attr($subscriber['name']); ?>" required>
+                            <br>
+                            <input type="submit" class="button-primary" value="Save Changes">
+                        </form>
+                    </div>
+                    <?php
+
+                    exit;
+                }
+                break;
+
+            case 'delete':
+                // Удаление записи
+                $wpdb->delete($table_name, array('id' => $subscriber_id), array('%d'));
+                wp_redirect(admin_url('admin.php?page=subscribers_page'));
+                exit;
+                break;
+
+            // Добавьте другие действия, если необходимо
+        }
+    }
+}
+add_action('admin_init', 'handle_subscribers_actions');
