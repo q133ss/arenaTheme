@@ -264,7 +264,7 @@ function register_announcements_types(){
 		//'map_meta_cap'      => null, // Ставим true чтобы включить дефолтный обработчик специальных прав
 		'hierarchical'        => false,
 		'supports'            => ['title', 'excerpt', 'thumbnail' ], // 'title','editor','author','thumbnail','excerpt','trackbacks','custom-fields','comments','revisions','page-attributes','post-formats'
-		'taxonomies'          => [],
+		'taxonomies'          => ['category'],
 		'has_archive'         => false,
 		'rewrite'             => true,
 		'query_var'           => true,
@@ -433,6 +433,56 @@ function true_loadmore()
     endwhile;
     die;
 }
+
+
+//loadmore Announcements
+add_action('wp_ajax_loadmoreAnnouncements', 'true_loadmoreAnnouncements');
+add_action('wp_ajax_nopriv_loadmoreAnnouncements', 'true_loadmoreAnnouncements');
+function true_loadmoreAnnouncements()
+{
+    $paged = !empty($_POST['paged']) ? $_POST['paged'] : 1;
+    $paged++;
+
+    $cat = $_GET['cat'];
+
+
+    $params = array(
+		'post_type' => 'announcements', // тип постов - записи
+		'posts_per_page' => 9,
+		'orderby' => 'date', // сортировать по дате
+		'order' => 'DESC', // по убыванию (сначала - свежие посты)
+		'suppress_filters' => true, // 'posts_*' и 'comment_feed_*' фильтры игнорируются
+		'paged' => $paged
+	);
+
+	if($cat != 0){
+		$params['tax_query'] = array(
+	        array(
+	            'taxonomy' => 'category', // Замените 'category' на вашу таксономию
+	            'field'    => 'id',
+	            'terms'    => $cat,
+	        ),
+	    );
+	}
+    query_posts($params);
+    while (have_posts()) : the_post();
+    ?>
+    <li class="poster-events__item grid__item">
+	    <img src="<?php echo get_the_post_thumbnail_url(); ?>" alt="">
+	    <p class="grid__date"><?php echo get_the_date('d F Y'); ?></p>
+	    <h3 class="grid__title"><?php echo get_the_title(); ?></h3>
+	    <p class="grid__description"><?php echo get_the_content(); ?></p>
+	    <a class="grid__button _button-no-fill" href="<?php echo get_the_permalink(); ?>">Узнать подробнее</a>
+	</li>
+    <?php
+    endwhile;
+    die;
+}
+
+
+
+
+
 
 //Ajax subscribe
 add_action('wp_ajax_subscribe', 'true_subscribe');

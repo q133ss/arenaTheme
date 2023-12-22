@@ -52,7 +52,7 @@ get_header();
                 $max_pages = $wp_query->max_num_pages;
                 if ($paged < $max_pages) {
             ?>
-            <button onclick="loadMore('<?php echo $max_pages; ?>', '<?php echo $paged; ?>')" id="loadBtn" class="all-news__button _button">Загрузить еще</button>
+            <button onclick="loadMore('<?php echo $max_pages; ?>')" id="loadBtn" class="all-news__button _button">Загрузить еще</button>
             <?php 
                 }
                 wp_reset_query();
@@ -64,7 +64,8 @@ get_header();
         </main>
 
 <script>
-    function loadMore(maxPages, paged){
+    let paged = <?php echo $paged; ?>;
+    function loadMore(maxPages){
             let button = jQuery('#loadBtn');
             jQuery.ajax({
                 type: 'POST',
